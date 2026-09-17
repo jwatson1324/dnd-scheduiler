@@ -121,6 +121,7 @@ th { color: var(--text-dim); font-weight: 600; font-size: 0.75rem; text-transfor
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
 }
 .topbar .who { font-size: 0.85rem; color: var(--text-dim); }
+.topbar .who-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .hidden { display: none !important; }
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
