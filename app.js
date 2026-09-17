@@ -119,12 +119,13 @@ function showApp() {
   init();
 }
 
-// Sign out: drop the live listeners, forget the name, and go back to the gate.
+// Sign out: forget the name, drop the live listeners, and go back to the gate.
 // Everything here is local — no Firestore write, so saved votes stay saved.
+//
+// The screen swap comes first and the teardown is guarded: neither an SDK
+// unsubscribe nor a browser that refuses localStorage (private mode) can leave
+// the button looking dead.
 function signOut() {
-  unsubscribes.forEach(unsub => unsub());
-  unsubscribes = [];
-  localStorage.removeItem(NAME_KEY);
   currentName = "";
   currentVotes = {};
   unsavedVotes = false;
@@ -140,6 +141,16 @@ function signOut() {
   document.getElementById("slotStatus").textContent = "";
   document.getElementById("saveStatus").textContent = "";
   document.getElementById("gateNameInput").focus();
+
+  try {
+    localStorage.removeItem(NAME_KEY);
+  } catch (e) {
+    console.error("couldn't clear the stored name", e);
+  }
+  unsubscribes.forEach(unsub => {
+    try { unsub(); } catch (e) { console.error("listener teardown failed", e); }
+  });
+  unsubscribes = [];
 }
 
 function fatal(message) {
