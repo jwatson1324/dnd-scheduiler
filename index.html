@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D Party Scheduler</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="gateScreen" class="gate-wrap">
+    <h1>D&D Party Scheduler</h1>
+    <div class="sub">Enter your name to continue.</div>
+    <input type="text" id="gateNameInput" placeholder="Your name" autocomplete="off">
+    <button id="gateSubmitBtn" style="width:100%;">Enter</button>
+    <div class="gate-error" id="gateError"></div>
+  </div>
+
+  <div id="appScreen" class="hidden">
+    <div class="topbar">
+      <h1 style="margin:0;">D&D Party Scheduler</h1>
+      <span class="who" id="whoLine"></span>
+    </div>
+    <div class="sub">Select a month, add slots, and vote. Results update live.</div>
+
+    <section>
+      <h2>Month</h2>
+      <input type="month" id="monthPicker">
+    </section>
+
+    <section id="setupSection">
+      <h2>Time slots this month</h2>
+      <div id="slotList"></div>
+      <div class="add-slot-grid">
+        <div class="full">
+          <label>Date</label>
+          <input type="date" id="newSlotDate">
+        </div>
+        <div>
+          <label>Start time</label>
+          <select id="newSlotStart"></select>
+        </div>
+        <div>
+          <label>End time</label>
+          <select id="newSlotEnd"></select>
+        </div>
+        <div class="full">
+          <button id="addSlotBtn" style="width:100%;">Add slot</button>
+          <div class="status" id="slotStatus"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="voteSection">
+      <h2>Your availability</h2>
+      <div id="voteSlots"></div>
+      <button id="saveBtn" style="margin-top:10px;">Save my votes</button>
+      <div class="status" id="saveStatus"></div>
+    </section>
+
+    <section id="resultsSection">
+      <h2>Best days this month</h2>
+      <div id="resultsTable"></div>
+      <div class="respondents" id="respondentsLine"></div>
+    </section>
+  </div>
+
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-message" id="modalMessage"></div>
+      <div class="modal-actions">
+        <button class="secondary" id="modalCancel">Cancel</button>
+        <button id="modalOk">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
