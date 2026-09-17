@@ -2,7 +2,9 @@
 
 A single-page availability poll for a six-person D&D party. Players open a URL, type
 their name, and rate each candidate time slot **Can't / Can make it work / Works**.
-Results aggregate live across everyone viewing the page.
+Results aggregate live across everyone viewing the page. The name is remembered on that
+device until **Sign out** in the top corner, which returns to the name entry screen —
+useful on a shared laptop, or when someone typed the wrong name.
 
 Static page on GitHub Pages, Cloud Firestore for storage. No build step, no bundler,
 no framework, no package manager — the files in this repository are the deployed site.
@@ -15,9 +17,8 @@ no framework, no package manager — the files in this repository are the deploy
 | `app.js` | All behaviour — ES module, imports the Firebase SDK from the gstatic CDN |
 | `styles.css` | Stylesheet, light/dark via `prefers-color-scheme` |
 | `firebase-config.js` | Firebase web config. Safe to commit — see below |
-| `FIREBASE-SETUP.md` | The provisioned backend: project details, data model, live security rules |
-| `BRIEF.md` | The spec this was built to |
-| `reference-current-version.html` | The pre-port original, kept for reference. Not deployed logic |
+| `docs/FIREBASE-SETUP.md` | The provisioned backend: project details, data model, live security rules |
+| `docs/BRIEF.md` | The spec this was built to |
 
 ## Running locally
 
@@ -35,7 +36,8 @@ deployed site, so votes you cast locally are real votes.
 ## Deploying (GitHub Pages)
 
 Repository **Settings → Pages → Build and deployment**: source *Deploy from a branch*,
-branch the default branch, folder `/ (root)`. Save. The site appears at
+branch the default branch, folder `/ (root)` — not `/docs`, which holds the spec and
+backend notes rather than the site. Save. The site appears at
 `https://<user>.github.io/<repo>/` within a minute or two; every push to that branch
 redeploys it.
 
@@ -119,7 +121,7 @@ single batched write, so no orphaned votes can be left behind.
 
 ## Firebase
 
-The project is provisioned, seeded, and its rules are published — see `FIREBASE-SETUP.md`
+The project is provisioned, seeded, and its rules are published — see `docs/FIREBASE-SETUP.md`
 for the project details, the data model, and the exact rules in force. Rules are edited
 and published from the Firestore console's Rules tab; keep the copy in that file in step.
 

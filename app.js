@@ -1,7 +1,8 @@
 // D&D Party Scheduler — static page, Cloud Firestore backend.
 //
-// Ported from an Anthropic artifact (see reference-current-version.html). The UI,
-// scoring, and ranking behaviour are unchanged; only the persistence layer differs:
+// Ported from an Anthropic artifact (spec in docs/BRIEF.md; the pre-port original is
+// in this repository's git history). The UI, scoring, and ranking behaviour are
+// unchanged from that version; only the persistence layer differs:
 // `claude.use("db")` is replaced with the Firestore web SDK, loaded straight from
 // the gstatic CDN at a pinned version. No build step, no bundler, no framework.
 //
@@ -37,6 +38,8 @@ let currentVotes = {};
 let currentName = "";
 let selectedMonth = "";
 let unsavedVotes = false;   // guards in-progress votes against live snapshots
+let unsubscribes = [];      // live Firestore listeners, dropped on sign-out
+let wired = false;          // one-time DOM listener wiring
 
 const VOTE_LEVELS = [
   { key: "cant", label: "Can't", score: 0, cls: "active-cant" },
@@ -109,10 +112,34 @@ async function tryLogin(name) {
 }
 
 function showApp() {
+  document.getElementById("gateError").textContent = "";
   document.getElementById("gateScreen").classList.add("hidden");
   document.getElementById("appScreen").classList.remove("hidden");
   document.getElementById("whoLine").textContent = currentName;
   init();
+}
+
+// Sign out: drop the live listeners, forget the name, and go back to the gate.
+// Everything here is local — no Firestore write, so saved votes stay saved.
+function signOut() {
+  unsubscribes.forEach(unsub => unsub());
+  unsubscribes = [];
+  localStorage.removeItem(NAME_KEY);
+  currentName = "";
+  currentVotes = {};
+  unsavedVotes = false;
+  slots = [];
+  roster = [];
+  responses = {};
+
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("gateScreen").classList.remove("hidden");
+  document.getElementById("whoLine").textContent = "";
+  document.getElementById("gateNameInput").value = "";
+  document.getElementById("gateError").textContent = "";
+  document.getElementById("slotStatus").textContent = "";
+  document.getElementById("saveStatus").textContent = "";
+  document.getElementById("gateNameInput").focus();
 }
 
 function fatal(message) {
@@ -121,12 +148,14 @@ function fatal(message) {
 
 // ---------- App ----------
 function init() {
-  try {
-    db = getFirestore(initializeApp(firebaseConfig));
-  } catch (e) {
-    console.error("Firestore init failed", e);
-    fatal("Couldn't reach the shared schedule. Check your connection and reload.");
-    return;
+  if (!db) {
+    try {
+      db = getFirestore(initializeApp(firebaseConfig));
+    } catch (e) {
+      console.error("Firestore init failed", e);
+      fatal("Couldn't reach the shared schedule. Check your connection and reload.");
+      return;
+    }
   }
 
   populateTimeSelects();
@@ -134,7 +163,7 @@ function init() {
   selectedMonth = localStorage.getItem(MONTH_KEY) || currentMonthStr();
   const monthPicker = document.getElementById("monthPicker");
   monthPicker.value = selectedMonth;
-  monthPicker.addEventListener("change", () => {
+  if (!wired) monthPicker.addEventListener("change", () => {
     selectedMonth = monthPicker.value;
     localStorage.setItem(MONTH_KEY, selectedMonth);
     setDateBoundsForMonth();
@@ -144,7 +173,7 @@ function init() {
   });
   setDateBoundsForMonth();
 
-  onSnapshot(collection(db, "roster"), (snap) => {
+  unsubscribes.push(onSnapshot(collection(db, "roster"), (snap) => {
     roster = snap.docs
       .map(d => ({ id: d.id, ...(d.data() || {}) }))
       .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -159,9 +188,9 @@ function init() {
     renderResults();
   }, (e) => {
     console.error("roster subscription error", e);
-  });
+  }));
 
-  onSnapshot(collection(db, "slots"), (snap) => {
+  unsubscribes.push(onSnapshot(collection(db, "slots"), (snap) => {
     slots = snap.docs
       .map(d => ({ id: d.id, ...(d.data() || {}) }))
       .sort((a, b) => a.order - b.order);
@@ -172,9 +201,9 @@ function init() {
     console.error("slots subscription error", e);
     document.getElementById("slotList").innerHTML =
       '<div class="empty">Couldn\'t load slots. Reload the page.</div>';
-  });
+  }));
 
-  onSnapshot(collection(db, "responses"), (snap) => {
+  unsubscribes.push(onSnapshot(collection(db, "responses"), (snap) => {
     responses = {};
     snap.docs.forEach(d => { responses[d.id] = d.data() || {}; });
     const myId = slugName(currentName);
@@ -184,10 +213,13 @@ function init() {
     renderResults();
   }, (e) => {
     console.error("responses subscription error", e);
-  });
+  }));
 
-  document.getElementById("addSlotBtn").addEventListener("click", addSlot);
-  document.getElementById("saveBtn").addEventListener("click", saveVotes);
+  if (!wired) {
+    document.getElementById("addSlotBtn").addEventListener("click", addSlot);
+    document.getElementById("saveBtn").addEventListener("click", saveVotes);
+    wired = true;
+  }
 }
 
 function setDateBoundsForMonth() {
@@ -501,6 +533,7 @@ function escapeHtml(str) {
 document.getElementById("gateSubmitBtn").addEventListener("click", () => {
   tryLogin(document.getElementById("gateNameInput").value);
 });
+document.getElementById("signOutBtn").addEventListener("click", signOut);
 document.getElementById("gateNameInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") tryLogin(document.getElementById("gateNameInput").value);
 });
